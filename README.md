@@ -21,19 +21,49 @@ compared with the wrong one.
 
 ## Install
 
+Requires Python 3.10 or newer. PyMuPDF and numpy are installed automatically.
+
+From the project folder, create a virtual environment and install the tool
+into it:
+
 ```sh
+cd slides-diff
 python3 -m venv .venv
 .venv/bin/pip install -e .
 ```
 
-Requires Python 3.10+, PyMuPDF and numpy.
+This creates the command `.venv/bin/slides-diff`. To run it as plain
+`slides-diff` from any folder, choose one of these:
+
+- link it into a folder on your `PATH` (for example `~/.local/bin`):
+  ```sh
+  ln -s "$PWD/.venv/bin/slides-diff" ~/.local/bin/slides-diff
+  ```
+- or activate the environment in the current shell:
+  `source .venv/bin/activate`
+- or install with [pipx](https://pipx.pypa.io) instead of the steps above:
+  `pipx install -e .`
+
+Because of `-e` (editable install), changes to the code take effect without
+reinstalling.
 
 ## Usage
 
 ```sh
-slides-diff old.pdf new.pdf                # writes new.diff.pdf
-slides-diff old.pdf new.pdf -o report.pdf --report
+slides-diff OLD.pdf NEW.pdf [options]
 ```
+
+Examples:
+
+```sh
+slides-diff old.pdf new.pdf                     # writes new.diff.pdf
+slides-diff old.pdf new.pdf -o report.pdf       # choose the output file
+slides-diff old.pdf new.pdf --changed-only      # skip unchanged slides
+slides-diff old.pdf new.pdf --report            # also print the alignment
+```
+
+If `slides-diff` is not on your `PATH`, use `.venv/bin/slides-diff` instead.
+`slides-diff -h` lists all options:
 
 | Option | Meaning |
 | --- | --- |
@@ -44,13 +74,21 @@ slides-diff old.pdf new.pdf -o report.pdf --report
 | `--no-visual` | text diff only, skip the pixel diff |
 | `--report` | print the alignment table on stdout |
 
-To diff two commits of a Beamer source, compile both and compare the PDFs, e.g.:
+### Comparing two commits of a Beamer source
+
+Compile both versions and compare the PDFs. For example, to compare the
+current version of `lecture.tex` with the one from 3 commits ago (run from the
+folder that contains `lecture.tex`):
 
 ```sh
-git worktree add /tmp/old HEAD~3 && (cd /tmp/old && latexmk -pdf lecture.tex)
+git worktree add /tmp/old-slides HEAD~3                          # check out the old commit
+(cd /tmp/old-slides/"$(git rev-parse --show-prefix)" && latexmk -pdf lecture.tex)
 latexmk -pdf lecture.tex
-slides-diff /tmp/old/lecture.pdf lecture.pdf
+slides-diff /tmp/old-slides/"$(git rev-parse --show-prefix)"lecture.pdf lecture.pdf
+git worktree remove --force /tmp/old-slides                      # clean up
 ```
+
+Replace `HEAD~3` with any commit, branch or tag.
 
 ## How it works
 
